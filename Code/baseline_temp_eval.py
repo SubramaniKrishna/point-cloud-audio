@@ -71,7 +71,7 @@ for F in list_Fs:
             x, fsog = librosa.load(fi,sr = fsog)
             x, index = librosa.effects.trim(x,top_db = tDb)
             x = librosa.resample(x, fsog, fs, res_type='kaiser_fast',scale= True)
-            x = librosa.stft(x,n_fft = Nfftog,win_length = Nfft, hop_length=(int)(Nfft*hf), window = 'hann')/Nfft
+            x = librosa.stft(x,n_fft = Nfftog,win_length = Nfft, hop_length=(int)(Nfft*hf), window = 'hann')/Nfftog
             x = x[:-1,:] 
             a = np.log(1.0e-8 + np.abs(x))
             b = np.hsplit(a,np.arange(0,x.shape[1],Ntemp))

@@ -1,0 +1,1 @@
+{"epochs": 500, "weight_decay": 0.001, "window_size": 2048, "hop_factor": 0.5, "trim_dB": 60, "sampling_rate": 44100, "classes": 10, "layers": [1025, 513, 256], "batch_size": 128, "learning_rate": 0.001, "dataset": "ESC10", "architecture": "FB (Framewise Feed Forward Baseline)", "dropout_prob": 0.5, "model_params": 660492, "numpy_seed": 0, "torch_seed": 0}
