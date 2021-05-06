@@ -1,7 +1,7 @@
 # Point Cloud Audio Processing
 
-### Krishna Subramani<sup>1</sup>, Paris Smaragdis<sup>1,2</sup>
-### <sup>1</sup>UIUC, <sup>2</sup>Adobe Research
+### Krishna Subramani<sup>1</sup>, Paris Smaragdis<sup>1</sup>
+### <sup>1</sup>UIUC
 
 <!-- <a href="https://www.ee.iitb.ac.in/student/~krishnasubramani/data/icassp_paper.pdf" target="_blank">Paper</a> 	/ <a href="https://www.ee.iitb.ac.in/student/~krishnasubramani/data/vapar.bib" target="_blank">BibTeX</a> -->
 
