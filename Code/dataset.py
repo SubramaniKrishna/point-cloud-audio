@@ -236,3 +236,81 @@ class ESC_pc_temp_randKSS(Dataset):
 		pc = pc[indices,:]
 		
 		return torch.tensor(pc), torch.tensor(self.labels[idx])
+
+# 3ST dataloader for importance sampling (rebuttal experiment)
+# Procedure: Compute spectrogram gradient, and smooth areas where signal changes occur
+# use the above as a heat map to choose where to sample points from
+class ESC_pc_temp_importancerandKSS(Dataset):
+	"""
+	Inputs
+	------
+		x: array(N,Nt,T), N - Window Size, Nt - Number of frames, T - Number of samples
+		The input spectrograms
+		y: integer(T)
+		Label corresponding to each frame
+		farr: array(N//2)
+		Frequency coordinates for the Spectrotemporal point cloud
+		tarr: array(Nt)
+		Temporal coordinates for the Spectrotemporal point cloud
+		thresh: float (0 < thresh < 1)
+		Threshold on the spectral flux above which points will be randomly chosen
+		K: float (0 < K < 1)
+		Fraction of points to keep (will depend on the threshold chosen)
+		choice: int (0 or 1)
+		Randomly sampling the important points (0) or keeping the top magnitude important points (1)
+		winF: int (<N//2)
+		The window length of the convolving kernel, will decide how much to spread the probability across the TF representation
+	"""
+	def __init__(self, x,y,farr,tarr,K,choice,winF):
+		self.x = x
+		self.labels = y
+		self.farr = farr
+		self.tarr = tarr
+		self.K = K
+		self.choice = choice
+		self.winF = winF
+
+	def __len__(self):
+		return self.labels.shape[0]
+
+	def __getitem__(self,idx):
+		xt = self.x[:,:,idx]
+		tinds = np.repeat(np.arange(self.tarr.shape[0]),self.farr.shape[0])
+		finds = np.tile(np.arange(self.farr.shape[0]), self.tarr.shape[0])
+		pc = np.vstack((np.vstack((self.farr[finds],self.tarr[tinds])),xt[finds,tinds])).T
+		g = torch.gradient(torch.tensor(xt))
+		g = g[0].abs() + g[1].abs()
+		k = torch.kaiser_window( window_length = 2,periodic = True,beta = 5.09)[:,None] @ torch.kaiser_window( window_length = self.winF,periodic = True, beta = 5.09)[None,:]
+		g = torch.nn.functional.conv2d( g[None,None,...], k[None,None], padding='same')[0,0] + 1.0e-6
+		if(self.choice == 0):
+			v = torch.multinomial( g.view(-1), self.K, replacement=True)
+			indices = v.numpy()
+		else:
+			indices = (-g.view(-1).numpy()).argsort()[:self.K]
+		pcret = pc[indices,:]
+
+
+		# sf = np.abs(np.diff(xt,axis = 1,prepend=0))
+		# sf = sf/(np.max(sf,axis = 0) + 1.0e-8)
+		# is_ids = np.argwhere(sf >= self.thresh)
+		# Nimp = is_ids.shape[0]
+		
+		# pc = np.vstack((np.vstack((self.farr[is_ids[:,0]],self.tarr[is_ids[:,1]])),xt[sf >= self.thresh])).T
+		# if(Nimp > self.K):
+		# 	if (self.choice == 0):
+		# 		indices = np.random.permutation(pc.shape[0])[:self.K]
+		# 	else:
+		# 		indices = (-pc[:,-1]).argsort()[:self.K]
+		# 	pcret = pc[indices,:]
+		# else:
+		# 	comp_ids = np.argwhere(sf < self.thresh)
+		# 	pc_comp = np.vstack((np.vstack((self.farr[comp_ids[:,0]],self.tarr[comp_ids[:,1]])),xt[sf < self.thresh])).T
+		# 	if (self.choice == 0):
+		# 		indices = np.random.permutation(pc.shape[0])[:Nimp]
+		# 		indices_ex = np.random.permutation(pc_comp.shape[0])[:(self.K - Nimp)]
+		# 	else:
+		# 		indices = (-pc[:,-1]).argsort()[:Nimp]
+		# 		indices_ex = (-pc_comp[:,-1]).argsort()[:(self.K - Nimp)]
+		# 	pcret = np.concatenate((pc[indices,:],pc_comp[indices_ex,:]),axis = 0)
+		
+		return torch.tensor(pcret), torch.tensor(self.labels[idx])
